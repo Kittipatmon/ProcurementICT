@@ -80,6 +80,192 @@
         </div>
     @endif
 
+    <!-- Procurement & Renewal Tracking Timeline Table (Premium UI Matching User Image) -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm overflow-hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">ตารางแสดงความคืบหน้าการสั่งซื้อ ต่ออายุการใช้งานอุปกรณ์ และโปรแกรมต่างๆ</h3>
+                        <p class="text-xs text-slate-500 mt-1">ติดตามขั้นตอนการดำเนินงานเสนอราคา, การอนุมัติงบประมาณ CAO, การออกเลข PR/PO และการตรวจสอบเอกสารบัญชี</p>
+                    </div>
+                </div>
+
+                @if($allRequests->isEmpty())
+                    <p class="text-xs text-slate-400 py-10 text-center">ไม่มีข้อมูลรายการจัดซื้อในขณะนี้</p>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[1200px] text-xs">
+                            <thead class="bg-yellow-300 text-black text-[10px]">
+                                <tr>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ลำดับ</th>
+                                    <th rowspan="2" class="border border-black py-2 px-4 text-center align-middle font-bold min-w-[150px]">รายการ</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ขอใบ<br>เสนอราคา</th>
+                                    <th colspan="3" class="border border-black py-2 px-2 text-center align-middle font-bold">ขออนุมัติการดำเนินการ</th>
+                                    <th colspan="3" class="border border-black py-2 px-2 text-center align-middle font-bold">เปิด PR / PO</th>
+                                    <th colspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold">ส่งเอกสารให้บัญชี</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ผลการดำเนินงาน</th>
+                                    <th colspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold">จำนวนเงิน</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">วันที่เริ่ม<br>ดำเนินการ</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">วันที่เริ่มดำเนินการ<br>จริง เลขที่ PO</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">วันที่<br>หมดอายุ</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ต่ออายุ<br>ครั้งถัดไป</th>
+                                    <th rowspan="2" class="border border-black py-2 px-2 text-center align-middle font-bold min-w-[120px]">หมายเหตุ</th>
+                                </tr>
+                                <tr>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">จัดทำ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">Manager ICT<br>อนุมัติ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">CAO<br>อนุมัติ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">จัดทำ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">Manager ICT<br>อนุมัติ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">CAO<br>อนุมัติ</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ส่งเอกสาร<br>ให้ SUP</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ส่งใบกำกับ<br>ภาษี</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">งบประมาณ<br>(ตั้ง)</th>
+                                    <th class="border border-black py-2 px-2 text-center align-middle font-bold whitespace-nowrap">ใช้จริง</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach($allRequests as $index => $req)
+                                    @php
+                                        // Calculate percentage progress based on status steps
+                                        $statuses = [
+                                            'draft' => 11.11,
+                                            'submitted' => 22.22,
+                                            'approved_manager' => 33.33,
+                                            'approved_ict' => 44.44,
+                                            'approved_cao' => 55.56,
+                                            'pr_created' => 66.67,
+                                            'po_created' => 77.78,
+                                            'delivered' => 88.89,
+                                            'completed' => 100.00,
+                                            'rejected' => 0.00
+                                        ];
+                                        $progress = $statuses[$req->status] ?? 11.11;
+                                        
+                                        // Map checkboxes dynamically based on progress
+                                        $step1 = true; // Request Quote is always true if created
+                                        $step2 = in_array($req->status, ['submitted', 'approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
+                                        $step3 = in_array($req->status, ['approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
+                                        $step4 = in_array($req->status, ['approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
+                                        $step5 = in_array($req->status, ['pr_created', 'pr_approved_ict', 'pr_approved_cao', 'po_created', 'delivered', 'completed']);
+                                        $step_pr_ict = in_array($req->status, ['pr_approved_ict', 'pr_approved_cao', 'po_created', 'delivered', 'completed']);
+                                        $step_pr_cao = in_array($req->status, ['pr_approved_cao', 'po_created', 'delivered', 'completed']);
+                                        $step6 = in_array($req->status, ['po_created', 'delivered', 'completed']);
+                                        $step7 = in_array($req->status, ['po_created', 'delivered', 'completed']);
+                                        $step8 = in_array($req->status, ['delivered', 'completed']);
+                                        $step9 = in_array($req->status, ['completed']);
+                                    @endphp
+                                    <tr class="hover:bg-slate-50 transition-colors bg-white">
+                                        <!-- ลำดับ -->
+                                        <td class="border border-black py-2 px-2 text-center text-slate-800 font-bold">{{ $index + 1 }}</td>
+                                        
+                                        <!-- รายการ -->
+                                        <td class="border border-black py-2 px-2 font-bold text-slate-800">
+                                            <a href="{{ route('procurements.show', $req->id) }}" class="hover:text-indigo-600 transition-colors text-xs">
+                                                {{ $req->title }}
+                                            </a>
+                                            <p class="text-[9px] text-slate-500 font-normal mt-0.5">{{ $req->request_no }}</p>
+                                        </td>
+                                        
+                                        <!-- ขอใบเสนอราคา -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step1 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- จัดทำ -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step2 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- Manager/ICT -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step3 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- CAO -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step4 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- จัดทำ PR/PO -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step5 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- Manager ICT อนุมัติ PR/PO -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step_pr_ict ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- CAO อนุมัติ PR/PO -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step_pr_cao ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- ส่งเอกสารให้ SUP -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step7 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- ส่งใบกำกับภาษี -->
+                                        <td class="border border-black py-2 px-1 text-center">
+                                            <input type="checkbox" disabled {{ $step8 ? 'checked' : '' }} class="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300">
+                                        </td>
+
+                                        <!-- ผลการดำเนินงาน (Progress Bar) -->
+                                        <td class="border border-black py-2 px-2 text-center">
+                                            <div class="flex items-center gap-1 justify-center flex-col">
+                                                <span class="font-extrabold text-[9px] text-slate-700">{{ number_format($progress, 1) }}%</span>
+                                                <div class="w-12 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                    <div class="h-full rounded-full @if($progress == 100) bg-emerald-500 @elseif($req->status === 'rejected') bg-rose-500 @else bg-indigo-500 @endif" style="width: {{ $progress }}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- งบประมาณ (ตั้ง) -->
+                                        <td class="border border-black py-2 px-2 text-right font-bold text-slate-700 whitespace-nowrap">
+                                            ฿{{ number_format($req->estimated_budget, 2) }}
+                                        </td>
+
+                                        <!-- ใช้จริง -->
+                                        <td class="border border-black py-2 px-2 text-right font-bold text-emerald-700 whitespace-nowrap">
+                                            ฿{{ number_format($req->approved_budget ?? 0, 2) }}
+                                        </td>
+
+                                        <!-- วันที่เริ่มดำเนินการ (Added) -->
+                                        <td class="border border-black py-2 px-2 text-center text-slate-600 whitespace-nowrap text-[10px]">
+                                            {{ $req->created_at->format('d/m/') . ($req->created_at->format('Y') + 543) }}
+                                        </td>
+
+                                        <!-- วันที่เริ่มดำเนินการจริง เลขที่ PO (Added) -->
+                                        <td class="border border-black py-2 px-2 text-center text-slate-600 whitespace-nowrap text-[10px]">
+                                            -
+                                        </td>
+
+                                        <!-- วันสิ้นสุดสัญญา/หมดอายุ -->
+                                        <td class="border border-black py-2 px-2 text-center text-slate-800 font-semibold whitespace-nowrap text-[10px]">
+                                            {{ $req->expected_date ? $req->expected_date->format('d/m/') . ($req->expected_date->format('Y') + 543) : '-' }}
+                                        </td>
+
+                                        <!-- ต่ออายุครั้งถัดไป -->
+                                        <td class="border border-black py-2 px-2 text-center text-amber-600 font-semibold whitespace-nowrap text-[10px]">
+                                            {{ $req->next_renewal_date ? $req->next_renewal_date->format('d/m/') . ($req->next_renewal_date->format('Y') + 543) : '-' }}
+                                        </td>
+
+                                        <!-- หมายเหตุ -->
+                                        <td class="border border-black py-2 px-2 text-slate-600 text-[10px] break-words">
+                                            {{ $req->description ?? '-' }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+
+                <!-- Added spacing below full width table -->
+    <div class="mb-8"></div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         <!-- Left 2 Cols: Main Tasks / Recent Actions -->
@@ -125,157 +311,6 @@
                 @endif
             </div>
 
-            <!-- Procurement & Renewal Tracking Timeline Table (Premium UI Matching User Image) -->
-            <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm overflow-hidden">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800">ตารางแสดงความคืบหน้าการสั่งซื้อ ต่ออายุการใช้งานอุปกรณ์ และโปรแกรมต่างๆ</h3>
-                        <p class="text-xs text-slate-500 mt-1">ติดตามขั้นตอนการดำเนินงานเสนอราคา, การอนุมัติงบประมาณ CAO, การออกเลข PR/PO และการตรวจสอบเอกสารบัญชี</p>
-                    </div>
-                </div>
-
-                @if($allRequests->isEmpty())
-                    <p class="text-xs text-slate-400 py-10 text-center">ไม่มีข้อมูลรายการจัดซื้อในขณะนี้</p>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[1200px] text-xs">
-                            <thead>
-                                <tr class="border-b border-slate-200 bg-slate-50">
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider text-center">ลำดับ</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider min-w-[200px]">รายการ</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">ขอใบเสนอราคา</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">จัดทำคำขอ</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">Manager/ICT อนุมัติ</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">CAO อนุมัติ</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">จัดทำ PR/PO</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">จัดซื้ออนุมัติ</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">ส่งเอกสารให้ SUP</th>
-                                    <th class="py-3 px-2 font-bold text-slate-700 uppercase tracking-wider text-center">ส่งใบกำกับภาษี</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider text-center">ผลการดำเนินงาน</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider text-right">งบประมาณ (ตั้ง)</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider text-right">ใช้จริง</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider">วันสิ้นสุดสัญญา / หมดอายุ</th>
-                                    <th class="py-3 px-4 font-bold text-slate-700 uppercase tracking-wider min-w-[150px]">หมายเหตุ</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach($allRequests as $index => $req)
-                                    @php
-                                        // Calculate percentage progress based on status steps
-                                        $statuses = [
-                                            'draft' => 11.11,
-                                            'submitted' => 22.22,
-                                            'approved_manager' => 33.33,
-                                            'approved_ict' => 44.44,
-                                            'approved_cao' => 55.56,
-                                            'pr_created' => 66.67,
-                                            'po_created' => 77.78,
-                                            'delivered' => 88.89,
-                                            'completed' => 100.00,
-                                            'rejected' => 0.00
-                                        ];
-                                        $progress = $statuses[$req->status] ?? 11.11;
-                                        
-                                        // Map checkboxes dynamically based on progress
-                                        $step1 = true; // Request Quote is always true if created
-                                        $step2 = in_array($req->status, ['submitted', 'approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
-                                        $step3 = in_array($req->status, ['approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
-                                        $step4 = in_array($req->status, ['approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
-                                        $step5 = in_array($req->status, ['approved_cao', 'pr_created', 'po_created', 'delivered', 'completed']);
-                                        $step6 = in_array($req->status, ['pr_created', 'po_created', 'delivered', 'completed']);
-                                        $step7 = in_array($req->status, ['po_created', 'delivered', 'completed']);
-                                        $step8 = in_array($req->status, ['delivered', 'completed']);
-                                        $step9 = in_array($req->status, ['completed']);
-                                    @endphp
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <!-- ลำดับ -->
-                                        <td class="py-4 px-4 text-center text-slate-500 font-bold">{{ $index + 1 }}</td>
-                                        
-                                        <!-- รายการ -->
-                                        <td class="py-4 px-4 font-bold text-slate-700">
-                                            <a href="{{ route('procurements.show', $req->id) }}" class="hover:text-indigo-600 transition-colors">
-                                                {{ $req->title }}
-                                            </a>
-                                            <p class="text-[10px] text-slate-400 font-normal mt-0.5">{{ $req->request_no }}</p>
-                                        </td>
-                                        
-                                        <!-- ขอใบเสนอราคา -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step1 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- จัดทำ -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step2 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- Manager/ICT -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step3 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- CAO -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step4 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- จัดทำ PR/PO -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step5 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- จัดซื้ออนุมัติ -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step6 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- ส่งเอกสารให้ SUP -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step7 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- ส่งใบกำกับภาษี -->
-                                        <td class="py-4 px-2 text-center">
-                                            <input type="checkbox" disabled {{ $step8 ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                        </td>
-
-                                        <!-- ผลการดำเนินงาน (Progress Bar) -->
-                                        <td class="py-4 px-4 text-center">
-                                            <div class="flex items-center gap-2 justify-center">
-                                                <span class="font-extrabold text-[10px] text-slate-500 w-8">{{ number_format($progress, 1) }}%</span>
-                                                <div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                                    <div class="h-full rounded-full @if($progress == 100) bg-emerald-500 @elseif($req->status === 'rejected') bg-rose-500 @else bg-indigo-500 @endif" style="width: {{ $progress }}%"></div>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <!-- งบประมาณ (ตั้ง) -->
-                                        <td class="py-4 px-4 text-right font-bold text-slate-700">
-                                            ฿{{ number_format($req->estimated_budget, 2) }}
-                                        </td>
-
-                                        <!-- ใช้จริง -->
-                                        <td class="py-4 px-4 text-right font-bold text-emerald-600">
-                                            ฿{{ number_format($req->approved_budget ?? 0, 2) }}
-                                        </td>
-
-                                        <!-- วันสิ้นสุดสัญญา/หมดอายุ -->
-                                        <td class="py-4 px-4 text-slate-500 font-semibold">
-                                            {{ $req->expected_date ? $req->expected_date->format('Y-m-d') : '-' }}
-                                        </td>
-
-                                        <!-- หมายเหตุ -->
-                                        <td class="py-4 px-4 text-slate-400 truncate max-w-[180px]" title="{{ $req->description }}">
-                                            {{ $req->description ?? '-' }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-
             <!-- Recent Requests -->
             <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
                 <div class="flex items-center justify-between mb-6">
@@ -292,26 +327,26 @@
                     </div>
                 @else
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr class="border-b border-slate-100">
-                                    <th class="py-3 text-xs font-bold uppercase text-slate-400 tracking-wider">รหัสคำขอ / ชื่อเรื่อง</th>
-                                    <th class="py-3 text-xs font-bold uppercase text-slate-400 tracking-wider">ความเร่งด่วน</th>
-                                    <th class="py-3 text-xs font-bold uppercase text-slate-400 tracking-wider">งบประมาณ</th>
-                                    <th class="py-3 text-xs font-bold uppercase text-slate-400 tracking-wider">สถานะ</th>
-                                    <th class="py-3 text-xs font-bold uppercase text-slate-400 tracking-wider"></th>
+                                    <th class="px-4 py-3 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">รหัสคำขอ / ชื่อเรื่อง</th>
+                                    <th class="px-4 py-3 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">ความเร่งด่วน</th>
+                                    <th class="px-4 py-3 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">งบประมาณ</th>
+                                    <th class="px-4 py-3 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">สถานะ</th>
+                                    <th class="px-4 py-3 text-xs font-bold uppercase text-slate-400 tracking-wider"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 @foreach($recentRequests as $request)
                                     <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="py-4">
-                                            <div class="space-y-0.5">
-                                                <p class="text-xs font-bold text-slate-400">{{ $request->request_no }}</p>
-                                                <p class="text-sm font-bold text-slate-700">{{ $request->title }}</p>
+                                        <td class="px-4 py-4">
+                                            <div class="space-y-0.5 w-48 lg:w-auto">
+                                                <p class="text-xs font-bold text-slate-400 whitespace-nowrap">{{ $request->request_no }}</p>
+                                                <p class="text-sm font-bold text-slate-700 line-clamp-2" title="{{ $request->title }}">{{ $request->title }}</p>
                                             </div>
                                         </td>
-                                        <td class="py-4">
+                                        <td class="px-4 py-4 whitespace-nowrap">
                                             <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded-md uppercase border 
                                                 @if($request->priority === 'urgent') bg-red-50 text-red-700 border-red-200
                                                 @elseif($request->priority === 'high') bg-orange-50 text-orange-700 border-orange-200
@@ -320,10 +355,10 @@
                                                 {{ $request->priority }}
                                             </span>
                                         </td>
-                                        <td class="py-4 text-sm font-bold text-slate-600">
+                                        <td class="px-4 py-4 text-sm font-bold text-slate-600 whitespace-nowrap">
                                             ฿{{ number_format($request->estimated_budget, 2) }}
                                         </td>
-                                        <td class="py-4">
+                                        <td class="px-4 py-4 whitespace-nowrap">
                                             <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-full border
                                                 @if($request->status === 'completed') bg-emerald-50 text-emerald-700 border-emerald-200
                                                 @elseif($request->status === 'rejected') bg-rose-50 text-rose-700 border-rose-200
@@ -332,7 +367,7 @@
                                                 {{ $request->status }}
                                             </span>
                                         </td>
-                                        <td class="py-4 text-right">
+                                        <td class="px-4 py-4 text-right whitespace-nowrap">
                                             <a href="{{ route('procurements.show', $request->id) }}" class="text-slate-400 hover:text-slate-700 p-1.5 transition-colors">
                                                 <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                             </a>
@@ -350,7 +385,7 @@
         <!-- Right 1 Col: Quick Actions / Budget Chart details -->
         <div class="space-y-8">
             
-            <!-- Quick actions panel -->
+            {{-- <!-- Quick actions panel -->
             <div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-3xl p-8">
                 <h3 class="text-lg font-bold text-slate-800 mb-4">ดำเนินการด่วน (Quick Actions)</h3>
                 <p class="text-xs text-slate-500 mb-6">คุณสามารถเปิดเสนอใบจัดซื้อจัดจ้างชิ้นใหม่ สัญญาซอฟต์แวร์ หรือตรวจสอบข้อมูลผู้จัดจำหน่ายได้รวดเร็วที่นี่</p>
@@ -370,6 +405,24 @@
                         <span>จดบันทึกสัญญาลิขสิทธิ์ซอฟต์แวร์</span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </a>
+                </div>
+            </div> --}}
+
+            <!-- Status Tracker (Bottleneck Analysis) -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-6">ติดตามสถานะการอนุมัติ (ค้างอยู่ส่วนไหน?)</h3>
+                <div class="space-y-4">
+                    @foreach($statusTracker as $label => $count)
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-600">{{ $label }}</span>
+                            <div class="flex items-center gap-3">
+                                <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full @if($count > 0) bg-amber-400 @else bg-slate-200 @endif" style="width: {{ $stats['pending'] > 0 ? ($count / $stats['pending']) * 100 : 0 }}%"></div>
+                                </div>
+                                <span class="text-xs font-bold w-4 text-right {{ $count > 0 ? 'text-amber-600' : 'text-slate-400' }}">{{ $count }}</span>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 

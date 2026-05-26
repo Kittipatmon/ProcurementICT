@@ -35,38 +35,33 @@ class BudgetController extends Controller
         }
 
         $validated = $request->validate([
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => 'required|exists:mysql_user.departments,id',
             'fiscal_year' => 'required|integer',
             'allocated_budget' => 'required|numeric|min:0',
+            'name' => 'nullable|string|max:255',
         ]);
 
-        Budget::updateOrCreate(
-            [
-                'department_id' => $validated['department_id'],
-                'fiscal_year' => $validated['fiscal_year'],
-            ],
-            [
-                'allocated_budget' => $validated['allocated_budget'],
-                'remaining_budget' => $validated['allocated_budget'] - DB::table('budget_transactions')
-                    ->whereExists(function($query) use ($validated) {
-                        $query->select(DB::raw(1))
-                            ->from('budgets')
-                            ->whereColumn('budgets.id', 'budget_transactions.budget_id')
-                            ->where('budgets.department_id', $validated['department_id'])
-                            ->where('budgets.fiscal_year', $validated['fiscal_year']);
-                    })
-                    ->sum('amount')
-            ]
-        );
+        if ($request->input('is_edit') === '1' && $request->input('budget_id')) {
+            $budget = Budget::findOrFail($request->input('budget_id'));
+            $budget->department_id = $validated['department_id'];
+            $budget->fiscal_year = $validated['fiscal_year'];
+            $budget->name = $validated['name'];
+            $budget->allocated_budget = $validated['allocated_budget'];
+        } else {
+            $budget = new Budget();
+            $budget->department_id = $validated['department_id'];
+            $budget->fiscal_year = $validated['fiscal_year'];
+            $budget->name = $validated['name'];
+            $budget->allocated_budget = $validated['allocated_budget'];
+            $budget->used_budget = 0;
+        }
+
+        // We will calculate remaining_budget below. For now, let's just save.
+        $budget->save();
 
         // recalculate remaining
-        $budget = Budget::where('department_id', $validated['department_id'])
-            ->where('fiscal_year', $validated['fiscal_year'])
-            ->first();
-        if ($budget) {
-            $budget->remaining_budget = $budget->allocated_budget - $budget->used_budget;
-            $budget->save();
-        }
+        $budget->remaining_budget = $budget->allocated_budget - $budget->used_budget;
+        $budget->save();
 
         return back()->with('success', 'ปรับปรุงงบประมาณเรียบร้อยแล้ว');
     }

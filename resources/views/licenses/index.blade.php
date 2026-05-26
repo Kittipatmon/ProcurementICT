@@ -70,7 +70,7 @@
                                     <div>
                                         <span class="text-slate-400">วันหมดอายุ:</span>
                                         <p class="font-bold text-slate-700 mt-1">
-                                            {{ $license->expire_date ? $license->expire_date->format('Y-m-d') : 'ถาวร' }}
+                                            {{ $license->expire_date ? $license->expire_date->format('d/m/') . ($license->expire_date->format('Y') + 543) : 'ถาวร' }}
                                         </p>
                                     </div>
                                     <div>

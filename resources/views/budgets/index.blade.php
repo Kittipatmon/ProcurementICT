@@ -29,8 +29,13 @@
                             
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h4 class="font-bold text-slate-700 text-sm">{{ $b->department->name ?? 'ไม่ระบุแผนก (ID: ' . $b->department_id . ')' }}</h4>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ปีงบประมาณ {{ $b->fiscal_year }}</p>
+                                    <h4 class="font-bold text-slate-700 text-sm">
+                                        {{ $b->department->name ?? 'ไม่ระบุแผนก (ID: ' . $b->department_id . ')' }}
+                                        @if($b->name)
+                                            <span class="text-indigo-600 ml-1 font-extrabold">({{ $b->name }})</span>
+                                        @endif
+                                    </h4>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">ปีงบประมาณ {{ $b->fiscal_year }}</p>
                                 </div>
                                 <span class="text-xs font-bold text-slate-500">ถูกใช้ไป {{ number_format($percent, 1) }}%</span>
                             </div>
@@ -60,7 +65,7 @@
                                 <div class="absolute bottom-6 right-6 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                     <!-- Edit Button (Loads data to form on the right) -->
                                     <button type="button" 
-                                            onclick="loadEditData('{{ $b->department_id }}', '{{ $b->fiscal_year }}', '{{ $b->allocated_budget }}', '{{ addslashes($b->department->name ?? 'ไม่ระบุแผนก') }}')"
+                                            onclick="loadEditData('{{ $b->id }}', '{{ $b->department_id }}', '{{ $b->fiscal_year }}', '{{ $b->allocated_budget }}', '{{ addslashes($b->name ?? '') }}', '{{ addslashes($b->department->name ?? 'ไม่ระบุแผนก') }}')"
                                             class="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-150 text-indigo-600 transition-colors" title="แก้ไข">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </button>
@@ -89,6 +94,13 @@
                     
                     <form action="{{ route('budgets.store') }}" method="POST" class="space-y-4 pt-2">
                         @csrf
+                        <input type="hidden" name="is_edit" id="is_edit" value="0">
+                        <input type="hidden" name="budget_id" id="budget_id" value="">
+                        
+                        <div>
+                            <label for="name" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">ชื่อรายการงบประมาณ (ไม่บังคับ)</label>
+                            <input type="text" name="name" id="name" placeholder="เช่น งบไอทีส่วนกลาง" class="w-full bg-slate-55 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
+                        </div>
                         
                         <div>
                             <label for="department_id" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">เลือกแผนก</label>
@@ -155,11 +167,14 @@
             });
         }
 
-        function loadEditData(departmentId, fiscalYear, allocatedBudget, deptName) {
+        function loadEditData(id, departmentId, fiscalYear, allocatedBudget, name, deptName) {
+            document.getElementById('budget_id').value = id;
             document.getElementById('department_id').value = departmentId;
             document.getElementById('fiscal_year').value = fiscalYear;
             document.getElementById('allocated_budget').value = allocatedBudget;
+            document.getElementById('name').value = name;
             document.getElementById('form_title').innerText = 'แก้ไขการจัดสรรงบประมาณ';
+            document.getElementById('is_edit').value = '1';
             
             // Show cancel edit button
             const cancelBtn = document.getElementById('cancel_edit_btn');
@@ -189,10 +204,13 @@
         }
 
         function resetForm() {
+            document.getElementById('budget_id').value = '';
             document.getElementById('department_id').value = '';
             document.getElementById('fiscal_year').value = '2026';
             document.getElementById('allocated_budget').value = '';
+            document.getElementById('name').value = '';
             document.getElementById('form_title').innerText = 'จัดสรรงบประมาณ (Allocate Budget)';
+            document.getElementById('is_edit').value = '0';
             
             // Hide cancel edit button
             const cancelBtn = document.getElementById('cancel_edit_btn');

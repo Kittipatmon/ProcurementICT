@@ -21,15 +21,13 @@
                         <input type="text" name="title" id="title" required value="{{ old('title') }}" placeholder="เช่น ขออนุมัติจัดซื้อเครื่อง Notebook สำหรับโปรแกรมเมอร์ใหม่ 2 เครื่อง" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-500">
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         <div>
                             <label for="category" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">หมวดหมู่</label>
                             <select name="category" id="category" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-indigo-500">
-                                <option value="hardware" {{ old('category') === 'hardware' ? 'selected' : '' }}>Hardware (คอมพิวเตอร์/เซิร์ฟเวอร์)</option>
-                                <option value="software" {{ old('category') === 'software' ? 'selected' : '' }}>Software (ลิขสิทธิ์ซอฟต์แวร์)</option>
-                                <option value="network" {{ old('category') === 'network' ? 'selected' : '' }}>Network (อุปกรณ์เครือข่าย)</option>
-                                <option value="service" {{ old('category') === 'service' ? 'selected' : '' }}>Service (บริการดูแลรักษา/คลาวด์)</option>
-                                <option value="other" {{ old('category') === 'other' ? 'selected' : '' }}>อื่นๆ</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->slug }}" {{ old('category') === $cat->slug ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -46,6 +44,11 @@
                         <div>
                             <label for="expected_date" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">วันที่ต้องการใช้งานอุปกรณ์</label>
                             <input type="date" name="expected_date" id="expected_date" value="{{ old('expected_date') }}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <div>
+                            <label for="next_renewal_date" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">วันที่ต่ออายุครั้งถัดไป</label>
+                            <input type="date" name="next_renewal_date" id="next_renewal_date" value="{{ old('next_renewal_date') }}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-600 focus:outline-none focus:border-indigo-500">
                         </div>
                     </div>
 

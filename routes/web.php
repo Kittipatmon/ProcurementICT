@@ -6,6 +6,7 @@ use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 
 // Guest Routes
@@ -61,4 +62,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/licenses/{id}', [LicenseController::class, 'destroy'])->name('licenses.destroy');
     Route::post('/licenses/{id}/assign', [LicenseController::class, 'assign'])->name('licenses.assign');
     Route::post('/licenses/revoke/{assignment_id}', [LicenseController::class, 'revoke'])->name('licenses.revoke');
+
+    // Categories Management
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+    Route::put('/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 });

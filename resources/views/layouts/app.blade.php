@@ -23,16 +23,22 @@
 </head>
 <body class="h-full flex overflow-hidden bg-slate-55">
 
+    <!-- Mobile sidebar backdrop (hidden by default) -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-30 hidden md:hidden transition-opacity opacity-0" onclick="toggleSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
+    <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 fixed inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out">
         <div class="h-20 flex items-center px-8 border-b border-slate-100 gap-3">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-md shadow-indigo-500/10">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             </div>
-            <div>
+            <div class="flex-1">
                 <h1 class="text-lg font-bold tracking-tight text-slate-800">ProcurementICT</h1>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Enterprise Platform</p>
             </div>
+            <button type="button" class="md:hidden text-slate-400 hover:text-slate-600" onclick="toggleSidebar()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
         
         <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
@@ -60,6 +66,11 @@
                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                 ลิขสิทธิ์ซอฟต์แวร์ (Licenses)
             </a>
+
+            <a href="{{ route('categories.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 {{ request()->routeIs('categories.*') ? 'bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent' }}">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                หมวดหมู่ (Categories)
+            </a>
         </nav>
         
         <!-- User profile footer info -->
@@ -82,14 +93,17 @@
     </aside>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50 relative">
         <!-- Topbar -->
-        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0">
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-10 shrink-0">
             <div class="flex items-center gap-4">
-                <h2 class="text-xl font-bold text-slate-800">@yield('page_title', 'แดชบอร์ด')</h2>
+                <button type="button" class="md:hidden text-slate-500 hover:text-slate-700 focus:outline-none" onclick="toggleSidebar()">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h2 class="text-lg md:text-xl font-bold text-slate-800 line-clamp-1">@yield('page_title', 'แดชบอร์ด')</h2>
             </div>
             
-            <div class="flex items-center gap-6">
+            <div class="hidden md:flex items-center gap-6">
                 <!-- Dept indicator -->
                 <div class="text-right">
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">สังกัดแผนก</p>
@@ -105,25 +119,45 @@
         </header>
 
         <!-- Dynamic Page View -->
-        <main class="flex-1 overflow-y-auto p-10">
+        <main class="flex-1 overflow-y-auto p-4 md:p-10">
             @yield('content')
         </main>
     </div>
 
     <!-- Script to run live clock and general page interactivity -->
     <script>
-        // Simple Realtime Clock
+        // Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        
+        function toggleSidebar() {
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+            if (isClosed) {
+                // Open
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                // slight delay for transition
+                setTimeout(() => { backdrop.classList.remove('opacity-0'); }, 10);
+            } else {
+                // Close
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => { backdrop.classList.add('hidden'); }, 300);
+            }
+        }
+
+        // Simple Realtime Clock (Thai Buddhist Era format)
         function updateClock() {
             const clockEl = document.getElementById('live-clock');
             if (clockEl) {
                 const now = new Date();
-                const year = now.getFullYear();
+                const buddhistYear = now.getFullYear() + 543;
                 const month = String(now.getMonth() + 1).padStart(2, '0');
                 const date = String(now.getDate()).padStart(2, '0');
                 const hours = String(now.getHours()).padStart(2, '0');
                 const minutes = String(now.getMinutes()).padStart(2, '0');
                 const seconds = String(now.getSeconds()).padStart(2, '0');
-                clockEl.textContent = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+                clockEl.textContent = `${date}/${month}/${buddhistYear} ${hours}:${minutes}:${seconds}`;
             }
         }
         setInterval(updateClock, 1000);

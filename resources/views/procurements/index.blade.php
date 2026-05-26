@@ -38,11 +38,9 @@
                 <label for="category" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">หมวดหมู่</label>
                 <select name="category" id="category" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-500 focus:outline-none focus:border-indigo-500">
                     <option value="">ทั้งหมด</option>
-                    <option value="hardware" {{ request('category') === 'hardware' ? 'selected' : '' }}>Hardware (ฮาร์ดแวร์)</option>
-                    <option value="software" {{ request('category') === 'software' ? 'selected' : '' }}>Software (ซอฟต์แวร์)</option>
-                    <option value="network" {{ request('category') === 'network' ? 'selected' : '' }}>Network (เครือข่าย)</option>
-                    <option value="service" {{ request('category') === 'service' ? 'selected' : '' }}>Service (บริการ)</option>
-                    <option value="other" {{ request('category') === 'other' ? 'selected' : '' }}>Other (อื่นๆ)</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->slug }}" {{ request('category') === $cat->slug ? 'selected' : '' }}>{{ $cat->name }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -76,40 +74,40 @@
             </div>
         @else
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                         <tr class="border-b border-slate-100">
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">เลขที่เอกสาร / หัวข้อ</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">ผู้ยื่นคำขอ</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">หมวดหมู่</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">งบประมาณ</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">สถานะ workflow</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider">วันที่บันทึก</th>
-                            <th class="py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider"></th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">เลขที่เอกสาร / หัวข้อ</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">ผู้ยื่นคำขอ</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">หมวดหมู่</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">งบประมาณ</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">สถานะ workflow</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider whitespace-nowrap">วันที่บันทึก</th>
+                            <th class="px-4 py-3.5 text-xs font-bold uppercase text-slate-400 tracking-wider"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach($requests as $request)
                             <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-4">
-                                    <div class="space-y-0.5">
-                                        <p class="text-xs font-bold text-slate-400">{{ $request->request_no }}</p>
-                                        <p class="text-sm font-bold text-slate-700">{{ $request->title }}</p>
+                                <td class="px-4 py-4">
+                                    <div class="space-y-0.5 w-48 lg:w-auto">
+                                        <p class="text-xs font-bold text-slate-400 whitespace-nowrap">{{ $request->request_no }}</p>
+                                        <p class="text-sm font-bold text-slate-700 line-clamp-2" title="{{ $request->title }}">{{ $request->title }}</p>
                                     </div>
                                 </td>
-                                <td class="py-4 text-sm text-slate-600">
-                                    <div class="flex flex-col">
+                                <td class="px-4 py-4 text-sm text-slate-600">
+                                    <div class="flex flex-col whitespace-nowrap">
                                         <span class="font-bold">{{ $request->requester->name }}</span>
                                         <span class="text-[10px] text-slate-400 font-semibold">{{ $request->department->name }}</span>
                                     </div>
                                 </td>
-                                <td class="py-4 text-sm text-slate-500 capitalize">
+                                <td class="px-4 py-4 text-sm text-slate-500 capitalize whitespace-nowrap">
                                     {{ $request->category }}
                                 </td>
-                                <td class="py-4 text-sm font-extrabold text-slate-700">
+                                <td class="px-4 py-4 text-sm font-extrabold text-slate-700 whitespace-nowrap">
                                     ฿{{ number_format($request->estimated_budget, 2) }}
                                 </td>
-                                <td class="py-4">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-full border
                                         @if($request->status === 'completed') bg-emerald-50 text-emerald-700 border-emerald-200
                                         @elseif($request->status === 'rejected') bg-rose-50 text-rose-700 border-rose-200
@@ -119,12 +117,12 @@
                                         {{ $request->status }}
                                     </span>
                                 </td>
-                                <td class="py-4 text-xs text-slate-400 font-bold">
-                                    {{ $request->created_at->format('Y-m-d H:i') }}
+                                <td class="px-4 py-4 text-sm text-slate-500 whitespace-nowrap">
+                                    {{ $request->created_at->format('d/m/') . ($request->created_at->format('Y') + 543) }}
                                 </td>
-                                <td class="py-4 text-right">
-                                    <a href="{{ route('procurements.show', $request->id) }}" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 hover:text-slate-800 text-slate-600 text-xs font-bold rounded-lg border border-slate-200 transition-colors">
-                                        รายละเอียด
+                                <td class="px-4 py-4 text-right whitespace-nowrap">
+                                    <a href="{{ route('procurements.show', $request->id) }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:border-indigo-300 hover:text-indigo-600 hover:shadow-sm transition-all">
+                                        เปิดพิจารณา
                                     </a>
                                 </td>
                             </tr>

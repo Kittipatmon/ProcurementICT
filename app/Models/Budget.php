@@ -11,6 +11,7 @@ class Budget extends Model
     protected $fillable = [
         'fiscal_year',
         'department_id',
+        'name',
         'allocated_budget',
         'used_budget',
         'remaining_budget',

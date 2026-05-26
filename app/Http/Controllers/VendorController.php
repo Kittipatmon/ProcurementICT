@@ -53,6 +53,7 @@ class VendorController extends Controller
             'tax_id' => 'nullable|string|max:50',
             'address' => 'nullable|string',
             'rating' => 'nullable|numeric|min:0|max:5',
+            'status' => 'nullable|in:active,inactive',
         ]);
 
         $vendor->update($validated);

@@ -21,6 +21,7 @@ class ProcurementRequest extends Model
         'current_step',
         'status',
         'expected_date',
+        'next_renewal_date',
         'completed_date',
     ];
 
@@ -28,6 +29,7 @@ class ProcurementRequest extends Model
     {
         return [
             'expected_date' => 'date',
+            'next_renewal_date' => 'date',
             'completed_date' => 'date',
         ];
     }
@@ -80,5 +82,10 @@ class ProcurementRequest extends Model
     public function budgetTransactions()
     {
         return $this->hasMany(BudgetTransaction::class, 'request_id');
+    }
+
+    public function categoryRelation()
+    {
+        return $this->belongsTo(Category::class, 'category', 'slug');
     }
 }

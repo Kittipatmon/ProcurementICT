@@ -9,6 +9,7 @@ use App\Models\ProcurementFile;
 use App\Models\ProcurementLog;
 use App\Models\Budget;
 use App\Models\BudgetTransaction;
+use App\Models\Category;
 use App\Models\PurchaseRequisition;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
@@ -53,13 +54,15 @@ class ProcurementController extends Controller
         }
 
         $requests = $query->latest()->paginate(15);
-        return view('procurements.index', compact('requests'));
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        return view('procurements.index', compact('requests', 'categories'));
     }
 
     public function create()
     {
         $vendors = Vendor::where('status', 'active')->get();
-        return view('procurements.create', compact('vendors'));
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
+        return view('procurements.create', compact('vendors', 'categories'));
     }
 
     public function store(Request $request)
@@ -69,9 +72,10 @@ class ProcurementController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'category' => 'required|in:hardware,software,network,service,other',
+            'category' => 'required|exists:categories,slug',
             'priority' => 'required|in:low,medium,high,urgent',
             'expected_date' => 'nullable|date|after_or_equal:today',
+            'next_renewal_date' => 'nullable|date|after_or_equal:today',
             'items' => 'required|array|min:1',
             'items.*.item_name' => 'required|string|max:255',
             'items.*.specification' => 'nullable|string',
@@ -114,6 +118,7 @@ class ProcurementController extends Controller
                 'current_step' => 'draft',
                 'status' => 'draft',
                 'expected_date' => $validated['expected_date'],
+                'next_renewal_date' => $validated['next_renewal_date'] ?? null,
             ]);
 
             // Create items
@@ -217,7 +222,7 @@ class ProcurementController extends Controller
             $oldStatus = $procRequest->status;
 
             // Modified: Added admin role bypass in the checks below to allow administrators to approve any workflow step.
-            if (($currentStep === 'manager_approval' && $user->procurement_role === 'manager') || $user->procurement_role === 'admin') {
+            if ($currentStep === 'manager_approval' && ($user->procurement_role === 'manager' || $user->procurement_role === 'admin')) {
                 // Update approval step
                 ProcurementApproval::where('request_id', $procRequest->id)
                     ->where('approval_step', 'manager_approval')
@@ -236,7 +241,7 @@ class ProcurementController extends Controller
 
                 // Create next step approval
                 // Find an ICT department employee
-                $ictManager = DB::table('employees')->where('procurement_role', 'ict')->first();
+                $ictManager = DB::connection('mysql_user')->table('employees')->where('procurement_role', 'ict')->first();
                 ProcurementApproval::create([
                     'request_id' => $procRequest->id,
                     'approver_id' => $ictManager ? $ictManager->id : $user->id,
@@ -244,7 +249,7 @@ class ProcurementController extends Controller
                     'status' => 'pending',
                 ]);
             }
-            elseif (($currentStep === 'ict_approval' && $user->procurement_role === 'ict') || $user->procurement_role === 'admin') {
+            elseif ($currentStep === 'ict_approval' && ($user->procurement_role === 'ict' || $user->procurement_role === 'admin')) {
                 ProcurementApproval::where('request_id', $procRequest->id)
                     ->where('approval_step', 'ict_approval')
                     ->where('status', 'pending')
@@ -259,7 +264,7 @@ class ProcurementController extends Controller
                     'current_step' => 'cao_approval',
                 ]);
 
-                $caoUser = DB::table('employees')->where('procurement_role', 'cao')->first();
+                $caoUser = DB::connection('mysql_user')->table('employees')->where('procurement_role', 'cao')->first();
                 ProcurementApproval::create([
                     'request_id' => $procRequest->id,
                     'approver_id' => $caoUser ? $caoUser->id : $user->id,
@@ -267,7 +272,7 @@ class ProcurementController extends Controller
                     'status' => 'pending',
                 ]);
             }
-            elseif (($currentStep === 'cao_approval' && $user->procurement_role === 'cao') || $user->procurement_role === 'admin') {
+            elseif ($currentStep === 'cao_approval' && ($user->procurement_role === 'cao' || $user->procurement_role === 'admin')) {
                 // CAO checks budget. Let's verify budget
                 $budget = Budget::where('department_id', $procRequest->department_id)
                     ->where('fiscal_year', 2026)
@@ -304,6 +309,44 @@ class ProcurementController extends Controller
                     'status' => 'approved_cao',
                     'approved_budget' => $procRequest->estimated_budget,
                     'current_step' => 'pr_creation',
+                ]);
+            }
+            elseif ($currentStep === 'pr_ict_approval' && ($user->procurement_role === 'ict' || $user->procurement_role === 'admin')) {
+                ProcurementApproval::where('request_id', $procRequest->id)
+                    ->where('approval_step', 'pr_ict_approval')
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'approved',
+                        'comment' => $validated['comment'],
+                        'approved_at' => now(),
+                    ]);
+
+                $procRequest->update([
+                    'status' => 'pr_approved_ict',
+                    'current_step' => 'pr_cao_approval',
+                ]);
+
+                $caoUser = DB::connection('mysql_user')->table('employees')->where('procurement_role', 'cao')->first();
+                ProcurementApproval::create([
+                    'request_id' => $procRequest->id,
+                    'approver_id' => $caoUser ? $caoUser->id : $user->id,
+                    'approval_step' => 'pr_cao_approval',
+                    'status' => 'pending',
+                ]);
+            }
+            elseif ($currentStep === 'pr_cao_approval' && ($user->procurement_role === 'cao' || $user->procurement_role === 'admin')) {
+                ProcurementApproval::where('request_id', $procRequest->id)
+                    ->where('approval_step', 'pr_cao_approval')
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'approved',
+                        'comment' => $validated['comment'],
+                        'approved_at' => now(),
+                    ]);
+
+                $procRequest->update([
+                    'status' => 'pr_approved_cao',
+                    'current_step' => 'po_creation',
                 ]);
             } else {
                 return back()->with('error', 'คุณไม่มีสิทธิ์ในการอนุมัติขั้นตอนนี้');
@@ -384,7 +427,15 @@ class ProcurementController extends Controller
 
         $procRequest->update([
             'status' => 'pr_created',
-            'current_step' => 'po_creation',
+            'current_step' => 'pr_ict_approval',
+        ]);
+
+        $ictManager = DB::connection('mysql_user')->table('employees')->where('procurement_role', 'ict')->first();
+        ProcurementApproval::create([
+            'request_id' => $procRequest->id,
+            'approver_id' => $ictManager ? $ictManager->id : $user->id,
+            'approval_step' => 'pr_ict_approval',
+            'status' => 'pending',
         ]);
 
         ProcurementLog::create([

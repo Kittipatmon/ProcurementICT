@@ -75,6 +75,16 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        return view('dashboard', compact('stats', 'budget', 'pendingApprovals', 'recentRequests', 'allRequests', 'licenseAlertsCount'));
+        // 6. Status Tracker (Bottleneck Analysis)
+        $statusTracker = [
+            'รออนุมัติ Manager' => (clone $query)->where('status', 'submitted')->count(),
+            'รอตรวจสอบ ICT' => (clone $query)->where('status', 'approved_manager')->count(),
+            'รออนุมัติงบ CAO' => (clone $query)->where('status', 'approved_ict')->count(),
+            'รอเปิด PR / PO' => (clone $query)->whereIn('status', ['approved_cao', 'pr_created'])->count(),
+            'รอส่งมอบอุปกรณ์' => (clone $query)->where('status', 'po_created')->count(),
+            'รอส่งเอกสารให้บัญชี' => (clone $query)->where('status', 'delivered')->count(),
+        ];
+
+        return view('dashboard', compact('stats', 'budget', 'pendingApprovals', 'recentRequests', 'allRequests', 'licenseAlertsCount', 'statusTracker'));
     }
 }

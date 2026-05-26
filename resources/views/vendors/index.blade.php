@@ -18,7 +18,7 @@
                             <div class="space-y-2">
                                 <div class="flex items-start justify-between">
                                     <h4 class="font-bold text-slate-700 text-sm line-clamp-2">{{ $vendor->vendor_name }}</h4>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 leading-none shrink-0">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase leading-none shrink-0 {{ $vendor->status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200' }} border">
                                         {{ $vendor->status }}
                                     </span>
                                 </div>
@@ -87,7 +87,7 @@
                                             <input type="email" name="email" value="{{ $vendor->email }}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
                                         </div>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">เลขที่ผู้เสียภาษี</label>
                                             <input type="text" name="tax_id" value="{{ $vendor->tax_id }}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
@@ -95,6 +95,13 @@
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">คะแนนประเมิน (0-5)</label>
                                             <input type="number" step="0.1" min="0" max="5" name="rating" value="{{ $vendor->rating }}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">สถานะ (Status)</label>
+                                            <select name="status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
+                                                <option value="active" {{ $vendor->status === 'active' ? 'selected' : '' }}>Active (เปิดใช้งาน)</option>
+                                                <option value="inactive" {{ $vendor->status === 'inactive' ? 'selected' : '' }}>Inactive (ระงับ)</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div>

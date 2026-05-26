@@ -28,8 +28,8 @@
                 // Determine current step index
                 $statusList = array_keys($steps);
                 $currentIndex = array_search($procRequest->status, $statusList);
-                if ($procRequest->status === 'pr_created') {
-                    $currentIndex = 4; // Map pr_created to step 5
+                if (in_array($procRequest->status, ['pr_created', 'pr_approved_ict', 'pr_approved_cao'])) {
+                    $currentIndex = 4; // Map these to step 5
                 }
                 if ($procRequest->status === 'rejected') {
                     $currentIndex = -1;
@@ -47,13 +47,13 @@
                     @php
                         $stepIndex = array_search($key, $statusList);
                         $isCompleted = $currentIndex >= $stepIndex;
-                        $isActive = $procRequest->status === $key || ($key === 'approved_cao' && $procRequest->status === 'pr_created');
+                        $isActive = $procRequest->status === $key || ($key === 'approved_cao' && in_array($procRequest->status, ['pr_created', 'pr_approved_ict', 'pr_approved_cao']));
                     @endphp
                     <div class="flex flex-col items-center relative z-10 flex-1">
                         <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all border
-                            @if($isCompleted) bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20
+                            @if($isCompleted) bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20
                             @else bg-slate-50 border-slate-200 text-slate-400 @endif
-                            @if($isActive) ring-4 ring-indigo-500/20 scale-110 @endif">
+                            @if($isActive) ring-4 ring-emerald-500/20 scale-110 @endif">
                             @if($isCompleted && !$isActive)
                                 <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                             @else
@@ -61,7 +61,7 @@
                             @endif
                         </div>
                         <span class="text-[10px] font-extrabold mt-3 tracking-wide text-center uppercase
-                            @if($isActive) text-indigo-600 font-black
+                            @if($isActive) text-emerald-600 font-black
                             @elseif($isCompleted) text-slate-700
                             @else text-slate-400 @endif">
                             {{ $label }}
@@ -109,7 +109,7 @@
                     <div>
                         <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">วันที่ต้องการใช้อุปกรณ์</p>
                         <p class="text-sm font-bold text-indigo-600 mt-1">
-                            {{ $procRequest->expected_date ? $procRequest->expected_date->format('Y-m-d') : 'ไม่ระบุ' }}
+                            {{ $procRequest->expected_date ? $procRequest->expected_date->format('d/m/') . ($procRequest->expected_date->format('Y') + 543) : 'ไม่ระบุ' }}
                         </p>
                     </div>
                 </div>
@@ -127,7 +127,7 @@
                 <h3 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 mb-6 uppercase tracking-wider">รายการอุปกรณ์/การจัดซื้อ (Items)</h3>
                 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
                         <thead>
                             <tr class="border-b border-slate-200">
                                 <th class="py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">ชื่ออุปกรณ์/รายละเอียด</th>
@@ -322,8 +322,60 @@
                     </div>
                 @endif
 
+                <!-- 5.1 Manager ICT approves PR -->
+                @if($procRequest->status === 'pr_created' && ($user->procurement_role === 'ict' || $user->procurement_role === 'admin'))
+                    <div class="space-y-4">
+                        <p class="text-xs text-slate-500">ในฐานะ Manager ICT โปรดตรวจสอบความถูกต้องของใบขอซื้อ (PR)</p>
+                        
+                        <form action="{{ route('procurements.approve', $procRequest->id) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <input type="text" name="comment" placeholder="ความคิดเห็นประกอบการอนุมัติ (ไม่บังคับ)" class="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+                            
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+                                    Manager ICT อนุมัติ PR
+                                </button>
+                        </form>
+                        
+                        <form action="{{ route('procurements.reject', $procRequest->id) }}" method="POST" class="flex-1">
+                            @csrf
+                            <input type="hidden" name="comment" id="reject-comment-pr-ict" value="ไม่อนุมัติเนื่องจาก...">
+                            <button type="submit" onclick="let c=prompt('โปรดระบุสาเหตุการไม่อนุมัติ PR:'); if(!c) return false; document.getElementById('reject-comment-pr-ict').value=c;" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+                                ไม่อนุมัติ PR
+                            </button>
+                        </form>
+                            </div>
+                    </div>
+                @endif
+
+                <!-- 5.2 CAO approves PR -->
+                @if($procRequest->status === 'pr_approved_ict' && ($user->procurement_role === 'cao' || $user->procurement_role === 'admin'))
+                    <div class="space-y-4">
+                        <p class="text-xs text-slate-500">ในฐานะผู้อนุมัติงบประมาณ (CAO) โปรดตรวจสอบความถูกต้องของใบขอซื้อ (PR)</p>
+                        
+                        <form action="{{ route('procurements.approve', $procRequest->id) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <input type="text" name="comment" placeholder="ความคิดเห็นประกอบการอนุมัติ (ไม่บังคับ)" class="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+                            
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+                                    CAO อนุมัติ PR
+                                </button>
+                        </form>
+                        
+                        <form action="{{ route('procurements.reject', $procRequest->id) }}" method="POST" class="flex-1">
+                            @csrf
+                            <input type="hidden" name="comment" id="reject-comment-pr-cao" value="ไม่อนุมัติเนื่องจาก...">
+                            <button type="submit" onclick="let c=prompt('โปรดระบุสาเหตุการไม่อนุมัติ PR:'); if(!c) return false; document.getElementById('reject-comment-pr-cao').value=c;" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+                                ไม่อนุมัติ PR
+                            </button>
+                        </form>
+                            </div>
+                    </div>
+                @endif
+
                 <!-- 6. Procurement assigns PO -->
-                @if($procRequest->status === 'pr_created' && ($user->procurement_role === 'procurement' || $user->procurement_role === 'admin'))
+                @if($procRequest->status === 'pr_approved_cao' && ($user->procurement_role === 'procurement' || $user->procurement_role === 'admin'))
                     <div class="space-y-4">
                         <p class="text-xs text-slate-500">เลข PR พร้อมแล้ว ดำเนินการระบุใบสั่งซื้อ PO และกำหนดเลือกผู้ขายรับเหมา</p>
                         
@@ -415,7 +467,7 @@
                     @foreach($procRequest->purchaseRequisitions as $pr)
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-slate-400">เลขที่ใบขอซื้อ PR:</span>
-                            <span class="font-bold text-slate-700">{{ $pr->pr_no }} ({{ $pr->created_at->format('Y-m-d') }})</span>
+                            <span class="font-bold text-slate-700">{{ $pr->pr_no }} ({{ $pr->created_at->format('d/m/') }}{{ $pr->created_at->format('Y') + 543 }})</span>
                         </div>
                     @endforeach
 
@@ -446,7 +498,7 @@
                             <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                             <div>
                                 <p class="text-slate-700 font-bold">{{ $log->action }}</p>
-                                <p class="text-[10px] text-slate-400">{{ $log->user->name }} • {{ $log->created_at->format('Y-m-d H:i') }}</p>
+                                <p class="text-[10px] text-slate-400">{{ $log->user->name }} • {{ $log->created_at->format('d/m/') }}{{ $log->created_at->format('Y') + 543 }} {{ $log->created_at->format('H:i') }}</p>
                             </div>
                         </div>
                     @endforeach
