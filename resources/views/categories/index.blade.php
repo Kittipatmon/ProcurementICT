@@ -1,189 +1,221 @@
 @extends('layouts.app')
 
 @section('title', 'จัดการหมวดหมู่')
-@section('page_title', 'จัดการหมวดหมู่จัดซื้อ ICT (Categories)')
+@section('page_title', 'ระบบจัดการหมวดหมู่ (Category Management)')
 
 @section('content')
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h2 class="text-2xl font-bold text-blue-900 border-l-4 border-blue-600 pl-3">แฟ้มหมวดหมู่ระบบ</h2>
+        <p class="text-sm text-slate-500 mt-1 pl-4">จัดการและดูแลหมวดหมู่สำหรับการจัดซื้อ ICT</p>
+    </div>
+</div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- Left 2 Cols: Categories List -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-base font-bold text-slate-800">รายการหมวดหมู่ทั้งหมด</h3>
-                    <span class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full">
-                        {{ $categories->count() }} หมวดหมู่
-                    </span>
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+    <!-- Left Col: Categories Form (Hospital Style - Left Sidebar for data entry) -->
+    <div class="xl:col-span-1">
+        @if(Auth::user()->procurement_role === 'admin')
+            <div class="bg-white border-t-4 border-t-blue-600 shadow-md rounded-b-lg overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                    <h3 class="text-sm font-bold text-blue-800 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        บันทึกหมวดหมู่ใหม่
+                    </h3>
                 </div>
                 
-                @if($categories->isEmpty())
-                    <div class="py-16 text-center">
-                        <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                        <p class="text-sm font-semibold text-slate-400">ไม่มีข้อมูลหมวดหมู่ในระบบ</p>
+                <form action="{{ route('categories.store') }}" method="POST" class="p-4 space-y-4">
+                    @csrf
+                    <div>
+                        <label for="name" class="block text-xs font-bold text-slate-700 mb-1">ชื่อหมวดหมู่ <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" id="name" required placeholder="ระบุชื่อหมวดหมู่" class="w-full bg-white border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-sm text-slate-800 shadow-sm transition-shadow">
                     </div>
-                @else
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        @foreach($categories as $category)
-                            <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-500/20 hover:bg-white transition-all flex flex-col justify-between space-y-4 shadow-sm">
-                                <div class="space-y-2">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-center gap-2.5">
-                                            <div class="w-4 h-4 rounded-full shrink-0 shadow-sm border border-white/50" style="background-color: {{ $category->color }}"></div>
-                                            <h4 class="font-bold text-slate-700 text-sm line-clamp-2">{{ $category->name }}</h4>
-                                        </div>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase leading-none shrink-0
-                                            {{ $category->is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400 border border-slate-200' }}">
-                                            {{ $category->is_active ? 'Active' : 'Inactive' }}
-                                        </span>
-                                    </div>
-                                    <p class="text-xs text-slate-500">{{ $category->description ?? 'ไม่มีคำอธิบาย' }}</p>
-                                    <div class="flex items-center gap-3 pt-1">
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Slug:</span>
-                                        <code class="text-[10px] font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-indigo-600">{{ $category->slug }}</code>
-                                    </div>
-                                </div>
 
-                                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                                    <span class="text-xs text-slate-500">
-                                        <span class="font-bold text-slate-700">{{ $category->procurement_requests_count }}</span> คำขอจัดซื้อ
-                                    </span>
-                                    <div class="flex items-center gap-2">
-                                        @if(Auth::user()->procurement_role === 'admin')
-                                            <!-- Edit Button -->
-                                            <button type="button" onclick="openEditCategory({{ $category->id }})" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 text-[10px] font-bold transition-all" title="แก้ไข">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
-                                                แก้ไข
-                                            </button>
-                                            <!-- Delete Button -->
-                                            <form action="{{ route('categories.destroy', $category->id) }}" method="POST" class="inline" onsubmit="return confirm('คุณต้องการลบหมวดหมู่ «{{ $category->name }}» ใช่หรือไม่?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 text-[10px] font-bold transition-all" title="ลบ">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                                    ลบ
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="text-[10px] text-slate-400 font-bold uppercase">Category</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Edit Modal for this category -->
-                            @if(Auth::user()->procurement_role === 'admin')
-                            <div id="edit-category-modal-{{ $category->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm" onclick="if(event.target===this) closeEditCategory({{ $category->id }})">
-                                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 p-8 space-y-5 animate-fadeIn">
-                                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                                        <h3 class="text-sm font-bold text-slate-800">แก้ไขหมวดหมู่</h3>
-                                        <button onclick="closeEditCategory({{ $category->id }})" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
-                                    </div>
-                                    <form action="{{ route('categories.update', $category->id) }}" method="POST" class="space-y-4">
-                                        @csrf
-                                        @method('PUT')
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">ชื่อหมวดหมู่</label>
-                                            <input type="text" name="name" value="{{ $category->name }}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">คำอธิบาย</label>
-                                            <textarea name="description" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">{{ $category->description }}</textarea>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">สี (HEX Color)</label>
-                                                <div class="flex items-center gap-2">
-                                                    <input type="color" name="color" value="{{ $category->color }}" class="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer p-0.5">
-                                                    <span class="text-xs text-slate-500 font-mono">{{ $category->color }}</span>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">สถานะ</label>
-                                                <label class="flex items-center gap-2 cursor-pointer mt-2">
-                                                    <input type="checkbox" name="is_active" value="1" {{ $category->is_active ? 'checked' : '' }} class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500">
-                                                    <span class="text-xs text-slate-600 font-semibold">เปิดใช้งาน (Active)</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-3 pt-2">
-                                            <button type="button" onclick="closeEditCategory({{ $category->id }})" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl text-xs transition-all">ยกเลิก</button>
-                                            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-xs transition-all shadow-md">บันทึกการแก้ไข</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                            @endif
-                        @endforeach
+                    <div>
+                        <label for="description" class="block text-xs font-bold text-slate-700 mb-1">รายละเอียด</label>
+                        <textarea name="description" id="description" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม" class="w-full bg-white border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-sm text-slate-800 shadow-sm transition-shadow"></textarea>
                     </div>
-                @endif
-            </div>
-        </div>
 
-        <!-- Right 1 Col: Create Category Form -->
-        <div>
-            @if(Auth::user()->procurement_role === 'admin')
-                <div class="bg-white border border-slate-200 p-8 rounded-3xl space-y-4 shadow-sm">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3 mb-2">เพิ่มหมวดหมู่ใหม่</h3>
-                    
-                    <form action="{{ route('categories.store') }}" method="POST" class="space-y-4 pt-2">
-                        @csrf
-                        
-                        <div>
-                            <label for="name" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">ชื่อหมวดหมู่</label>
-                            <input type="text" name="name" id="name" required placeholder="เช่น Printer (เครื่องพิมพ์)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
-                        </div>
-
-                        <div>
-                            <label for="description" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">คำอธิบาย</label>
-                            <textarea name="description" id="description" rows="3" placeholder="อธิบายประเภทสินค้า/บริการในหมวดนี้..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500"></textarea>
-                        </div>
-
-                        <div>
-                            <label for="color" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">สี (HEX Color)</label>
-                            <div class="flex items-center gap-3">
-                                <input type="color" name="color" id="color" value="#6366f1" class="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer p-0.5">
-                                <span class="text-xs text-slate-500">เลือกสีสำหรับแท็กหมวดหมู่</span>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-xs transition-all shadow-md">
-                            บันทึกหมวดหมู่ใหม่
+                    <div class="pt-2">
+                        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-md flex justify-center items-center gap-2 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            บันทึกข้อมูล
                         </button>
-                    </form>
+                    </div>
+                </form>
+            </div>
+        @else
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg shadow-sm">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700 font-bold">จำกัดสิทธิ์</p>
+                        <p class="text-xs text-yellow-600 mt-1">เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเพิ่มหมวดหมู่ได้</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+
+    <!-- Right Col: Categories Data Table (Hospital Style) -->
+    <div class="xl:col-span-3">
+        <div class="bg-white border border-slate-300 shadow-md rounded-lg overflow-hidden">
+            <div class="bg-blue-800 px-4 py-3 flex justify-between items-center text-white border-b-4 border-blue-900">
+                <h3 class="text-sm font-bold flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    ตารางข้อมูลหมวดหมู่
+                </h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-blue-900 text-blue-100 text-xs font-bold border border-blue-700 shadow-inner">
+                    ทั้งหมด {{ $categories->count() }} รายการ
+                </span>
+            </div>
+
+            @if($categories->isEmpty())
+                <div class="p-8 text-center bg-slate-50">
+                    <svg class="mx-auto h-12 w-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <p class="text-slate-500 text-sm font-semibold">ยังไม่มีประวัติการบันทึกข้อมูล</p>
                 </div>
             @else
-                <div class="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
-                    <p class="text-xs text-slate-400 text-center">สิทธิ์การใช้งานของคุณไม่สามารถจัดการหมวดหมู่ได้ (เฉพาะผู้ดูแลระบบ)</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-max">
+                        <thead>
+                            <tr class="bg-blue-50 border-b border-blue-200 text-blue-900 text-xs uppercase tracking-wide">
+                                <th class="py-3 px-4 font-bold text-center border-r border-blue-200 w-16">ลำดับ</th>
+                                <th class="py-3 px-4 font-bold border-r border-blue-200">ชื่อหมวดหมู่ (รหัส)</th>
+                                <th class="py-3 px-4 font-bold border-r border-blue-200 w-64">รายละเอียด</th>
+                                <th class="py-3 px-4 font-bold text-center border-r border-blue-200 w-28">สถิติคำขอ</th>
+                                <th class="py-3 px-4 font-bold text-center border-r border-blue-200 w-28">สถานะ</th>
+                                <th class="py-3 px-4 font-bold text-center w-32">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            @foreach($categories as $index => $category)
+                                <tr class="border-b border-slate-200 hover:bg-blue-50/50 transition-colors {{ $index % 2 == 0 ? 'bg-white' : 'bg-slate-50/30' }}">
+                                    <td class="py-3 px-4 text-center font-bold text-slate-500 border-r border-slate-200">{{ $index + 1 }}</td>
+                                    <td class="py-3 px-4 border-r border-slate-200">
+                                        <div class="font-bold text-slate-800">{{ $category->name }}</div>
+                                        <div class="text-[11px] font-mono text-blue-600 mt-0.5">{{ $category->slug }}</div>
+                                    </td>
+                                    <td class="py-3 px-4 border-r border-slate-200">
+                                        @if($category->description)
+                                            <p class="text-xs text-slate-600">{{ $category->description }}</p>
+                                        @else
+                                            <span class="text-xs text-slate-400 italic">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-center border-r border-slate-200">
+                                        <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold {{ $category->procurement_requests_count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500' }}">
+                                            {{ $category->procurement_requests_count }} รายการ
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center border-r border-slate-200">
+                                        @if($category->is_active)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-green-100 text-green-800 border border-green-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> ปกติ
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> ระงับ
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        @if(Auth::user()->procurement_role === 'admin')
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button type="button" onclick="openEditCategory({{ $category->id }})" class="p-1.5 text-blue-600 hover:bg-blue-100 border border-transparent hover:border-blue-200 rounded transition-colors shadow-sm" title="แก้ไขข้อมูล">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                </button>
+                                                <form action="{{ route('categories.destroy', $category->id) }}" method="POST" class="inline" onsubmit="return confirm('ยืนยันการลบข้อมูลหมวดหมู่? ข้อมูลที่เกี่ยวข้องอาจได้รับผลกระทบ')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="p-1.5 text-red-600 hover:bg-red-100 border border-transparent hover:border-red-200 rounded transition-colors shadow-sm" title="ลบข้อมูล">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-slate-400 font-medium">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+
+                                <!-- Edit Modal -->
+                                @if(Auth::user()->procurement_role === 'admin')
+                                <div id="edit-category-modal-{{ $category->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm" onclick="if(event.target===this) closeEditCategory({{ $category->id }})">
+                                    <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-fadeIn border-t-4 border-t-blue-600">
+                                        <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                                            <h3 class="text-base font-bold text-blue-900 flex items-center gap-2">
+                                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                แก้ไขแฟ้มข้อมูล
+                                            </h3>
+                                            <button onclick="closeEditCategory({{ $category->id }})" class="text-slate-400 hover:text-slate-700 transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            </button>
+                                        </div>
+                                        <form action="{{ route('categories.update', $category->id) }}" method="POST" class="p-5 space-y-5">
+                                            @csrf
+                                            @method('PUT')
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อหมวดหมู่ <span class="text-red-500">*</span></label>
+                                                <input type="text" name="name" value="{{ $category->name }}" required class="w-full bg-white border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-sm text-slate-800 shadow-sm transition-shadow">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-700 mb-1">รายละเอียด</label>
+                                                <textarea name="description" rows="3" class="w-full bg-white border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2 text-sm text-slate-800 shadow-sm transition-shadow">{{ $category->description }}</textarea>
+                                            </div>
+                                            <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                                                <label class="flex items-center gap-3 cursor-pointer">
+                                                    <input type="checkbox" name="is_active" value="1" {{ $category->is_active ? 'checked' : '' }} class="w-5 h-5 rounded text-blue-600 border-slate-300 focus:ring-blue-500">
+                                                    <div>
+                                                        <span class="block text-sm font-bold text-slate-800">สถานะเปิดใช้งาน (Active)</span>
+                                                        <span class="block text-xs text-slate-500">หากปิดใช้งาน หมวดหมู่นี้จะไม่แสดงในแบบฟอร์มขอจัดซื้อใหม่</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            <div class="flex gap-3 pt-3 border-t border-slate-100">
+                                                <button type="button" onclick="closeEditCategory({{ $category->id }})" class="flex-1 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded shadow-sm border border-slate-300 transition-colors">ยกเลิก</button>
+                                                <button type="submit" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded shadow-md flex justify-center items-center gap-2 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                                    บันทึกการแก้ไข
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             @endif
         </div>
-
     </div>
+</div>
 
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-    </style>
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+</style>
 
-    <script>
-        function openEditCategory(id) {
-            const modal = document.getElementById('edit-category-modal-' + id);
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
+<script>
+    function openEditCategory(id) {
+        const modal = document.getElementById('edit-category-modal-' + id);
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
-        function closeEditCategory(id) {
-            const modal = document.getElementById('edit-category-modal-' + id);
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
+    }
+    function closeEditCategory(id) {
+        const modal = document.getElementById('edit-category-modal-' + id);
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
-    </script>
+    }
+</script>
 
 @endsection

@@ -10,6 +10,7 @@ use App\Models\ProcurementLog;
 use App\Models\Budget;
 use App\Models\BudgetTransaction;
 use App\Models\Category;
+use App\Models\Department;
 use App\Models\PurchaseRequisition;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
@@ -34,9 +35,26 @@ class ProcurementController extends Controller
             $query->where('department_id', $user->dept_id);
         }
 
+        $baseQuery = clone $query;
+
         // Filters
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $statusVal = $request->status;
+            
+            // Map responsible roles to their statuses
+            $roleStatusMap = [
+                'role_user'        => ['draft', 'approved_cao', 'pr_approved_cao', 'po_created'], // ผู้ขอจัดซื้อ (1, 6, 9)
+                'role_manager'     => ['submitted'], // ผู้จัดการแผนก (3)
+                'role_ict'         => ['approved_manager', 'pr_created'], // Manager ICT (4, 7)
+                'role_cao'         => ['approved_ict', 'pr_approved_ict'], // CAO (5, 8)
+                'role_accounting'  => ['delivered'], // ฝ่ายบัญชี (10)
+            ];
+
+            if (array_key_exists($statusVal, $roleStatusMap)) {
+                $query->whereIn('status', $roleStatusMap[$statusVal]);
+            } else {
+                $query->where('status', $statusVal);
+            }
         }
         if ($request->filled('category')) {
             $query->where('category', $request->category);
@@ -53,9 +71,41 @@ class ProcurementController extends Controller
             });
         }
 
+        $statusTracker = [
+            // ผู้ขอจัดซื้อ: ร่างคำขอ
+            'user'        => (clone $baseQuery)->where('status', 'draft')->count(),
+            // Manager แผนก: รออนุมัติขั้นต้น
+            'manager'     => (clone $baseQuery)->where('status', 'submitted')->count(),
+            // Manager ICT: อนุมัติ 2 ครั้ง
+            'ict'         => (clone $baseQuery)->whereIn('status', ['approved_manager', 'pr_created'])->count(),
+            // CAO: อนุมัติ 2 ครั้ง
+            'cao'         => (clone $baseQuery)->whereIn('status', ['approved_ict', 'pr_approved_ict'])->count(),
+            'cao_budget'  => (clone $baseQuery)->where('status', 'approved_ict')->count(),
+            'cao_pr'      => (clone $baseQuery)->where('status', 'pr_approved_ict')->count(),
+            // เจ้าหน้าที่จัดซื้อ
+            'procurement' => (clone $baseQuery)->whereIn('status', ['approved_cao', 'pr_approved_cao', 'po_created'])->count(),
+            // ฝ่ายบัญชี
+            'finance'     => (clone $baseQuery)->where('status', 'delivered')->count(),
+        ];
+
+        // นับจำนวนคำขอเสนอราคาแยกตามแผนก (status = submitted)
+        $managerByDept = (clone $baseQuery)
+            ->where('status', 'submitted')
+            ->with('department')
+            ->get()
+            ->groupBy('department_id')
+            ->map(function ($items) {
+                return [
+                    'name'  => optional($items->first()->department)->name ?? 'ไม่ระบุแผนก',
+                    'count' => $items->count(),
+                ];
+            })
+            ->sortByDesc('count')
+            ->values();
+
         $requests = $query->latest()->paginate(15);
         $categories = Category::where('is_active', true)->orderBy('name')->get();
-        return view('procurements.index', compact('requests', 'categories'));
+        return view('procurements.index', compact('requests', 'categories', 'statusTracker', 'managerByDept'));
     }
 
     public function create()
@@ -543,4 +593,73 @@ class ProcurementController extends Controller
 
         return back()->with('success', 'โพสต์ความคิดเห็นสำเร็จ');
     }
+
+    public function updateStep(Request $request, $id)
+    {
+        $procRequest = ProcurementRequest::findOrFail($id);
+        $user = Auth::user();
+        $step = $request->input('step');
+        $checked = filter_var($request->input('checked'), FILTER_VALIDATE_BOOLEAN);
+
+        return DB::transaction(function () use ($procRequest, $user, $step, $checked) {
+            $oldStatus = $procRequest->status;
+
+            if ($checked) {
+                // Toggled ON (checked)
+                if ($step === 'step1') {
+                    $procRequest->update(['status' => 'draft', 'current_step' => 'draft']);
+                } elseif ($step === 'step2') {
+                    $procRequest->update(['status' => 'submitted', 'current_step' => 'manager_approval']);
+                } elseif ($step === 'step3') {
+                    $procRequest->update(['status' => 'approved_ict', 'current_step' => 'cao_approval']);
+                } elseif ($step === 'step4') {
+                    $procRequest->update(['status' => 'approved_cao', 'current_step' => 'pr_creation']);
+                } elseif ($step === 'step5') {
+                    $procRequest->update(['status' => 'pr_created', 'current_step' => 'pr_ict_approval']);
+                } elseif ($step === 'step_pr_ict') {
+                    $procRequest->update(['status' => 'pr_approved_ict', 'current_step' => 'pr_cao_approval']);
+                } elseif ($step === 'step_pr_cao') {
+                    $procRequest->update(['status' => 'pr_approved_cao', 'current_step' => 'po_creation']);
+                } elseif ($step === 'step6') {
+                    $procRequest->update(['status' => 'po_created', 'current_step' => 'delivery']);
+                } elseif ($step === 'step8') {
+                    $procRequest->update(['status' => 'delivered', 'current_step' => 'completion']);
+                } elseif ($step === 'completed') {
+                    $procRequest->update(['status' => 'completed', 'current_step' => 'completed', 'completed_date' => now()]);
+                }
+            } else {
+                // Toggled OFF (unchecked)
+                if ($step === 'step2') {
+                    $procRequest->update(['status' => 'draft', 'current_step' => 'draft']);
+                } elseif ($step === 'step3') {
+                    $procRequest->update(['status' => 'submitted', 'current_step' => 'manager_approval']);
+                } elseif ($step === 'step4') {
+                    $procRequest->update(['status' => 'approved_ict', 'current_step' => 'cao_approval']);
+                } elseif ($step === 'step5') {
+                    $procRequest->update(['status' => 'approved_cao', 'current_step' => 'pr_creation']);
+                } elseif ($step === 'step_pr_ict') {
+                    $procRequest->update(['status' => 'pr_created', 'current_step' => 'pr_ict_approval']);
+                } elseif ($step === 'step_pr_cao') {
+                    $procRequest->update(['status' => 'pr_approved_ict', 'current_step' => 'pr_cao_approval']);
+                } elseif ($step === 'step6') {
+                    $procRequest->update(['status' => 'pr_approved_cao', 'current_step' => 'po_creation']);
+                } elseif ($step === 'step8') {
+                    $procRequest->update(['status' => 'po_created', 'current_step' => 'delivery']);
+                } elseif ($step === 'completed') {
+                    $procRequest->update(['status' => 'delivered', 'current_step' => 'completion', 'completed_date' => null]);
+                }
+            }
+
+            ProcurementLog::create([
+                'request_id' => $procRequest->id,
+                'action' => 'updated_step_via_grid',
+                'user_id' => $user->id,
+                'old_value' => ['status' => $oldStatus],
+                'new_value' => ['status' => $procRequest->status, 'step' => $step, 'checked' => $checked],
+            ]);
+
+            return response()->json(['success' => true, 'status' => $procRequest->status]);
+        });
+    }
 }
+

@@ -33,10 +33,20 @@ class DashboardController extends Controller
         }
 
         $stats['total'] = (clone $query)->count();
-        $stats['pending'] = (clone $query)->whereIn('status', ['submitted', 'approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'po_created', 'delivered'])->count();
+        $stats['pending'] = (clone $query)->whereIn('status', ['submitted', 'approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'pr_approved_ict', 'pr_approved_cao', 'po_created', 'delivered'])->count();
         $stats['completed'] = (clone $query)->where('status', 'completed')->count();
         $stats['rejected'] = (clone $query)->where('status', 'rejected')->count();
         $stats['budget_spent'] = (clone $query)->where('status', 'completed')->sum('approved_budget');
+
+        // Average & max days pending
+        $pendingItems = (clone $query)->whereIn('status', ['submitted', 'approved_manager', 'approved_ict', 'approved_cao', 'pr_created', 'pr_approved_ict', 'pr_approved_cao', 'po_created', 'delivered'])->get(['created_at']);
+        $stats['avg_pending_days'] = $pendingItems->isNotEmpty()
+            ? (int) round($pendingItems->avg(fn($r) => now()->diffInDays($r->created_at)))
+            : 0;
+        $stats['oldest_pending_days'] = $pendingItems->isNotEmpty()
+            ? (int) $pendingItems->max(fn($r) => now()->diffInDays($r->created_at))
+            : 0;
+
 
         // 2. Department budget information
         $budget = Budget::where('department_id', $user->dept_id)
@@ -49,11 +59,11 @@ class DashboardController extends Controller
             $pendingApprovals->where('department_id', $user->dept_id)
                 ->where('status', 'submitted');
         } elseif ($user->procurement_role === 'ict') {
-            $pendingApprovals->where('status', 'approved_manager');
+            $pendingApprovals->whereIn('status', ['approved_manager', 'pr_created']);
         } elseif ($user->procurement_role === 'cao') {
-            $pendingApprovals->where('status', 'approved_ict');
+            $pendingApprovals->whereIn('status', ['approved_ict', 'pr_approved_ict']);
         } elseif ($user->procurement_role === 'procurement') {
-            $pendingApprovals->whereIn('status', ['approved_cao', 'pr_created']);
+            $pendingApprovals->whereIn('status', ['approved_cao', 'pr_approved_cao']);
         } else {
             $pendingApprovals->whereRaw('1 = 0'); // No tasks for user/executive/admin
         }
@@ -79,12 +89,21 @@ class DashboardController extends Controller
         $statusTracker = [
             'รออนุมัติ Manager' => (clone $query)->where('status', 'submitted')->count(),
             'รอตรวจสอบ ICT' => (clone $query)->where('status', 'approved_manager')->count(),
-            'รออนุมัติงบ CAO' => (clone $query)->where('status', 'approved_ict')->count(),
-            'รอเปิด PR / PO' => (clone $query)->whereIn('status', ['approved_cao', 'pr_created'])->count(),
+            'รออนุมัติงบ CAO' => (clone $query)->whereIn('status', ['approved_ict', 'pr_approved_ict'])->count(),
+            'รอเปิด PR / PO' => (clone $query)->whereIn('status', ['approved_cao', 'pr_created', 'pr_approved_cao'])->count(),
             'รอส่งมอบอุปกรณ์' => (clone $query)->where('status', 'po_created')->count(),
             'รอส่งเอกสารให้บัญชี' => (clone $query)->where('status', 'delivered')->count(),
         ];
 
         return view('dashboard', compact('stats', 'budget', 'pendingApprovals', 'recentRequests', 'allRequests', 'licenseAlertsCount', 'statusTracker'));
+    }
+
+    public function tracking()
+    {
+        $allRequests = ProcurementRequest::with(['requester', 'department', 'purchaseRequisitions', 'purchaseOrders.vendor'])
+            ->latest()
+            ->get();
+            
+        return view('tracking.index', compact('allRequests'));
     }
 }

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-23T03:05:40Z",
+  "title": "Design System: Enterprise Procurement & ICT Operations Platform",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Classic Navy", "canonical": "oklch(28.4% 0.165 264.4)" },
+      "accent-blue": { "role": "accent", "displayName": "Slate Blue Accent", "canonical": "oklch(62.3% 0.22 256.4)" },
+      "neutral-bg": { "role": "neutral", "displayName": "Slate Light BG", "canonical": "oklch(97.8% 0.008 247.9)" },
+      "neutral-ink": { "role": "neutral", "displayName": "Slate Deep Ink", "canonical": "oklch(14.7% 0.032 258.9)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Font", "purpose": "Major headings and dashboard metrics." },
+      "body": { "displayName": "Body Font", "purpose": "Standard text, descriptions, and forms." }
+    },
+    "shadows": [
+      { "name": "Action Hover", "value": "0 4px 6px -1px rgb(0 0 0 / 0.05)", "purpose": "Subtle hover indication." }
+    ],
+    "motion": [
+      { "name": "Standard Transition", "value": "all 150ms ease-in-out", "purpose": "Used for interactive state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Standard call-to-action button for forms and primary actions.",
+      "html": "<button class=\"ds-btn-primary\">ดำเนินการต่อ</button>",
+      "css": ".ds-btn-primary { background-color: #1e3a8a; color: #f8fafc; font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; transition: all 150ms ease-in-out; } .ds-btn-primary:hover { background-color: #3b82f6; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Form text field for data entry.",
+      "html": "<input type=\"text\" class=\"ds-input\" placeholder=\"กรอกข้อมูล...\" />",
+      "css": ".ds-input { width: 100%; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; font-family: 'Sarabun', sans-serif; font-size: 14px; color: #0f172a; outline: none; transition: all 150ms ease-in-out; } .ds-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sentinel Ledger",
+    "overview": "The visual language of the platform is designed to convey absolute security, financial precision, and institutional trust. It is optimized for enterprise workflows where users manage budgets, procurement requests, and IT license allocations.",
+    "keyCharacteristics": [
+      "High-contrast corporate palette: Classic Navy anchor tones with clear status identifiers.",
+      "Rigid corner hierarchy: A maximum border-radius of 12px enforces a formal and stable corporate environment.",
+      "Structured typography: Clear pairing of Instrument Sans for structural display elements and Sarabun for highly legible body copy."
+    ],
+    "rules": [
+      { "name": "The 10% Accent Rule", "body": "The bright Slate Blue Accent must represent no more than 10% of any given viewport surface. Its purpose is to guide interaction, not to decorate.", "section": "colors" },
+      { "name": "The Readability Cap", "body": "Body columns containing prose or long instructions must be capped at 65–75 characters per line to ensure reading ease.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces must remain flat with borders to define boundaries. Shadows must never be used statically; they only appear during interactive states (hover/focus).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do enforce a strict contrast ratio of at least 4.5:1 on all text elements against their backgrounds.",
+      "Do keep border radii at or below 12px for all cards, inputs, and buttons.",
+      "Do use clean borders rather than large shadows to define container boundaries."
+    ],
+    "donts": [
+      "Don't use fancy gradients, text gradients, or complex background glows.",
+      "Don't use corner radii larger than 12px on any element.",
+      "Don't pair a border and a large, soft drop shadow together on the same card or button."
+    ]
+  }
+}

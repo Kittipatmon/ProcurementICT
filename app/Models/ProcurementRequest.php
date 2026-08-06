@@ -88,4 +88,24 @@ class ProcurementRequest extends Model
     {
         return $this->belongsTo(Category::class, 'category', 'slug');
     }
+
+    public function getStatusTextAttribute()
+    {
+        $map = [
+            'draft'            => 'ร่างคำขอ',
+            'submitted'        => 'รออนุมัติแผนก',
+            'approved_manager' => 'รอ Manager ICT',
+            'approved_ict'     => 'รอ CAO อนุมัติ',
+            'approved_cao'     => 'รอออก PR/PO',
+            'pr_created'       => 'ออก PR/PO แล้ว (รอ ICT)',
+            'pr_approved_ict'  => 'PR/PO รอ CAO อนุมัติ',
+            'pr_approved_cao'  => 'รอออก PO',
+            'po_created'       => 'รอจัดส่งสินค้า',
+            'delivered'        => 'รอส่งเอกสารบัญชี',
+            'completed'        => 'เสร็จสิ้นสมบูรณ์',
+            'rejected'         => 'ถูกปฏิเสธ',
+        ];
+
+        return $map[$this->status] ?? $this->status;
+    }
 }
